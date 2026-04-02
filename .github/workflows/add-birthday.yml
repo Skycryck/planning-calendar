@@ -1,0 +1,41 @@
+name: Ajouter un anniversaire
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Prénom (+ Nom)"
+        required: true
+        type: string
+      birthdate:
+        description: "Date de naissance (YYYY-MM-DD)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Ajouter l'anniversaire
+        run: python scripts/add_birthday.py "${{ inputs.name }}" "${{ inputs.birthdate }}"
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Anniversaires.ics
+          git diff --cached --quiet && echo "Aucun changement" && exit 0
+          git commit -m "🎂 Ajout : ${{ inputs.name }}"
+          git push
