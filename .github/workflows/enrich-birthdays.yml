@@ -1,0 +1,40 @@
+name: Enrichir les anniversaires
+
+on:
+  # Chaque 1er janvier à 1h du matin UTC
+  schedule:
+    - cron: "0 1 1 1 *"
+  # À chaque push sur le fichier source
+  push:
+    paths:
+      - "Anniversaires.ics"
+  # Lancement manuel depuis l'onglet Actions
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Lancer le script d'enrichissement
+        run: python scripts/enrich_birthdays.py
+
+      - name: Commit et push si changement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Anniversaires-enriched.ics
+          git diff --cached --quiet && echo "Aucun changement" && exit 0
+          git commit -m "🎂 Mise à jour des âges ($(date +%Y))"
+          git push
