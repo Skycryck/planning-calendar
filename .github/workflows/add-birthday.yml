@@ -31,11 +31,14 @@ jobs:
       - name: Ajouter l'anniversaire
         run: python scripts/add_birthday.py "${{ inputs.name }}" "${{ inputs.birthdate }}"
 
+      - name: Régénérer le fichier enrichi
+        run: python scripts/enrich_birthdays.py
+
       - name: Commit et push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Anniversaires.ics
+          git add Anniversaires.ics Anniversaires-enriched.ics
           git diff --cached --quiet && echo "Aucun changement" && exit 0
           git commit -m "🎂 Ajout : ${{ inputs.name }}"
           git push
