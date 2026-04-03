@@ -5,12 +5,15 @@ Enrichit le fichier Anniversaires.ics en ajoutant l'âge dans le titre.
 - Génère Anniversaires-enriched.ics (avec âges, souscrit par les clients)
 - L'âge affiché = celui que la personne atteint dans l'année en cours
   (ex: en 2026, quelqu'un né en 1998 → "28 ans")
+- Les dates avant 1970 sont ramenées à 2000 pour compatibilité Proton Calendar
 """
 
 import re
 import sys
 from datetime import date
 from pathlib import Path
+
+SAFE_YEAR = 2000  # Année de remplacement pour les dates < 1970
 
 
 def extract_birth_year(dtstart_line: str) -> int | None:
@@ -19,8 +22,18 @@ def extract_birth_year(dtstart_line: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def rewrite_date_if_needed(line: str) -> str:
+    """Si l'année est < 1970, la remplace par SAFE_YEAR."""
+    match = re.search(r"(.*:)(\d{4})(\d{4})$", line)
+    if match:
+        year = int(match.group(2))
+        if year < 1970:
+            return f"{match.group(1)}{SAFE_YEAR}{match.group(3)}"
+    return line
+
+
 def enrich_summary(summary: str, age: int) -> str:
-    """Remplace 'Nom - Anniversaire' par 'Nom - XX ans (Anniversaire)'."""
+    """Remplace 'Nom - Anniversaire' par 'Nom - XX ans'."""
     if " - Anniversaire" in summary:
         return summary.replace(" - Anniversaire", f" - {age} ans")
     # Fallback : ajoute l'âge à la fin
@@ -38,7 +51,10 @@ def process_ics(input_path: Path, output_path: Path) -> None:
     for line in lines:
         if line.startswith("DTSTART;VALUE=DATE:"):
             birth_year = extract_birth_year(line)
-            output_lines.append(line)
+            output_lines.append(rewrite_date_if_needed(line))
+
+        elif line.startswith("DTEND;VALUE=DATE:"):
+            output_lines.append(rewrite_date_if_needed(line))
 
         elif line.startswith("SUMMARY:") and birth_year is not None:
             age = current_year - birth_year
