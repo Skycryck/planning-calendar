@@ -63,6 +63,9 @@ def process_ics(input_path: Path, output_path: Path) -> None:
             output_lines.append(f"SUMMARY:{new_summary}")
             birth_year = None  # Reset pour le prochain VEVENT
 
+        elif line.startswith("CLASS:PRIVATE"):
+            continue  # Supprimé : Google Agenda masque les événements privés
+
         else:
             output_lines.append(line)
 
